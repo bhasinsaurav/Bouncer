@@ -6,45 +6,159 @@
       xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
       xmlns:h="http://xmlns.jcp.org/jsf/html">
     <h:head>
-        <title>Facelet Title</title>
+        <title>Bouncer Dashboard</title>
+        <style type="text/css">
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f5f7fa;
+                margin: 0;
+                padding: 20px;
+                color: #333;
+            }
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e1e5eb;
+            }
+            .welcome {
+                font-size: 24px;
+                color: #2c3e50;
+                margin: 0;
+            }
+            .role-card {
+                padding: 20px;
+                margin-bottom: 20px;
+                border-radius: 6px;
+                background: #f8f9fa;
+                border-left: 4px solid;
+            }
+            .admin-card {
+                border-color: #3498db;
+                background-color: #e8f4fc;
+            }
+            .jsf-card {
+                border-color: #2ecc71;
+                background-color: #e8f8ef;
+            }
+            .rest-card {
+                border-color: #9b59b6;
+                background-color: #f3e8f8;
+            }
+            .card-title {
+                margin: 0;
+                color: #2c3e50;
+                font-size: 18px;
+            }
+            .nav-links {
+                display: flex;
+                gap: 15px;
+                margin: 25px 0;
+            }
+            .nav-link {
+                color: #3498db;
+                text-decoration: none;
+                padding: 8px 12px;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+            .nav-link:hover {
+                background-color: #e8f4fc;
+                text-decoration: underline;
+            }
+            .language-form {
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e1e5eb;
+            }
+            .language-selector {
+                padding: 8px 12px;
+                border: 1px solid #ced4da;
+                border-radius: 4px;
+                font-size: 14px;
+                background-color: white;
+            }
+            .logout-btn {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background-color 0.2s;
+            }
+            .logout-btn:hover {
+                background-color: #c0392b;
+            }
+        </style>
     </h:head>
     <h:body>
-        <h1>Hey! #{request.remoteUser}.</h1>
-        
-        <!-- Admin Access-->
-        <h:panelGroup rendered="#{userDashboardBean.isAdmin()}">
-            <h1>Logged in as Admin</h1>
-        </h:panelGroup>
-        
-        <!--JsfUser Access-->
-        <h:panelGroup rendered="#{userDashboardBean.isJsfUser()}">
-            <h1>Logged in as JsfUser</h1>
-        </h:panelGroup>
-        
-        <!--RestUser Access-->
-        <h:panelGroup rendered="#{userDashboardBean.isRestUser()}">
-            <h1>Logged in as RestUser</h1>
-        </h:panelGroup>
-        
-        <h:outputLink value="faces/appUser/List.xhtml">
-            Show All Users  
-         </h:outputLink> 
-        <h:outputLink value="faces/bouncer/List.xhtml">
-            Show All Bouncer Items 
-         </h:outputLink>
-        <h:outputLink value="index.html">
-            See the bouncer animation 
-         </h:outputLink>
-        <h:form>
-        <h:selectOneMenu value="#{bouncerController.language}" onchange = "submit()">
-            <f:selectItem itemValue="fr" itemLabel="French" /><!-- Changing language to french -->
-            <f:selectItem itemValue="en" itemLabel="English" />
-        </h:selectOneMenu>
-        </h:form>
-        
-        
-        
-        
-                
+        <div class="container">
+            <div class="header">
+                <h1 class="welcome">Welcome, #{request.remoteUser}!</h1>
+                <h:form>
+                    <h:commandButton value="Logout" action="#{userDashboardBean.logout()}" 
+                                   styleClass="logout-btn" immediate="true">
+                        <f:param name="faces-redirect" value="true" />
+                    </h:commandButton>
+                </h:form>
+            </div>
+            
+            <!-- Admin Access -->
+            <h:panelGroup rendered="#{userDashboardBean.isAdmin()}">
+                <div class="role-card admin-card">
+                    <h1 class="card-title">Administrator Dashboard</h1>
+                    <p>You have full system access privileges</p>
+                </div>
+            </h:panelGroup>
+            
+            <!-- JSF User Access -->
+            <h:panelGroup rendered="#{userDashboardBean.isJsfUser()}">
+                <div class="role-card jsf-card">
+                    <h1 class="card-title">JSF User Dashboard</h1>
+                    <p>You have access to JSF-specific features</p>
+                </div>
+            </h:panelGroup>
+            
+            <!-- REST User Access -->
+            <h:panelGroup rendered="#{userDashboardBean.isRestUser()}">
+                <div class="role-card rest-card">
+                    <h1 class="card-title">REST API User Dashboard</h1>
+                    <p>You have access to REST API endpoints</p>
+                </div>
+            </h:panelGroup>
+            
+            <div class="nav-links">
+                <h:outputLink value="faces/appUser/List.xhtml" styleClass="nav-link">
+                    👥 View All Users
+                </h:outputLink> 
+                <h:outputLink value="faces/bouncer/List.xhtml" styleClass="nav-link">
+                    🏀 View Bouncer Items
+                </h:outputLink>
+                <h:outputLink value="index.html" styleClass="nav-link">
+                    🎬 See Bouncer Animation
+                </h:outputLink>
+            </div>
+            
+            <h:form styleClass="language-form">
+                <label for="language">Language: </label>
+                <h:selectOneMenu id="language" value="#{bouncerController.language}" 
+                               onchange="submit()" styleClass="language-selector">
+                    <f:selectItem itemValue="fr" itemLabel="Français" />
+                    <f:selectItem itemValue="en" itemLabel="English" />
+                </h:selectOneMenu>
+            </h:form>
+        </div>
     </h:body>
 </html>

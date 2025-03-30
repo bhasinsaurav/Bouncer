@@ -32,5 +32,8 @@ public class UserDashboardBean implements Serializable {
             .isUserInRole("RestUser");
     }
 
-    
+    public String logout() {
+        FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
+        return "/index.xhtml?faces-redirect=true";
+    }
 }

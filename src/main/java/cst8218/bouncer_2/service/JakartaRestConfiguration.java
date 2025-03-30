@@ -15,7 +15,10 @@ import jakarta.ws.rs.core.Application;
  * Configures Jakarta RESTful Web Services for the application.
  * @author Juneau
  */
-@BasicAuthenticationMechanismDefinition
+@FormAuthenticationMechanismDefinition(
+loginToContinue = @LoginToContinue(
+loginPage = "/index.xhtml",
+errorPage = "/index.xhtml"))
 @DatabaseIdentityStoreDefinition(
 dataSourceLookup = "${'java:comp/DefaultDataSource'}",
 callerQuery = "#{'select password from app.appuser where userid = ?'}",
