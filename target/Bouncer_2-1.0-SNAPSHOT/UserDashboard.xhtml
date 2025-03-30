@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="#{bouncerController.language}"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html">
+    <h:head>
+        <title>Facelet Title</title>
+    </h:head>
+    <h:body>
+        <h1>Hey! #{request.remoteUser}.</h1>
+        
+        <!-- Admin Access-->
+        <h:panelGroup rendered="#{userDashboardBean.isAdmin()}">
+            <h1>Logged in as Admin</h1>
+        </h:panelGroup>
+        
+        <!--JsfUser Access-->
+        <h:panelGroup rendered="#{userDashboardBean.isJsfUser()}">
+            <h1>Logged in as JsfUser</h1>
+        </h:panelGroup>
+        
+        <!--RestUser Access-->
+        <h:panelGroup rendered="#{userDashboardBean.isRestUser()}">
+            <h1>Logged in as RestUser</h1>
+        </h:panelGroup>
+        
+        <h:outputLink value="faces/appUser/List.xhtml">
+            Show All Users  
+         </h:outputLink> 
+        <h:outputLink value="faces/bouncer/List.xhtml">
+            Show All Bouncer Items 
+         </h:outputLink>
+        <h:outputLink value="index.html">
+            See the bouncer animation 
+         </h:outputLink>
+        <h:form>
+        <h:selectOneMenu value="#{bouncerController.language}" onchange = "submit()">
+            <f:selectItem itemValue="fr" itemLabel="French" /><!-- Changing language to french -->
+            <f:selectItem itemValue="en" itemLabel="English" />
+        </h:selectOneMenu>
+        </h:form>
+        
+        
+        
+        
+                
+    </h:body>
+</html>
