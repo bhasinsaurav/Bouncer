@@ -72,24 +72,6 @@
         .login-button:hover {
             background-color: #2980b9;
         }
-        .error-message {
-            color: #e74c3c;
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        .footer-links {
-            margin-top: 1.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        .footer-link {
-            color: #3498db;
-            text-decoration: none;
-        }
-        .footer-link:hover {
-            text-decoration: underline;
-        }
     </style>
 </h:head>
 <h:body>
@@ -122,25 +104,7 @@
             </div>
 
             <button type="submit" class="login-button">Sign In</button>
-
-            <!-- Display error message if authentication fails -->
-            <h:panelGroup rendered="#{param.error == 'true'}">
-                <div class="error-message">
-                    Invalid username or password. Please try again.
-                </div>
-            </h:panelGroup>
         </form>
-
-        <div class="footer-links">
-            <a href="#" class="footer-link">Forgot password?</a>
-            <span> • </span>
-            <a href="#" class="footer-link">Contact support</a>
-        </div>
     </div>
-
-    <!-- Add CSRF protection if needed -->
-    <f:metadata>
-        <f:viewParam name="error" value="#{loginBean.error}" />
-    </f:metadata>
 </h:body>
 </html>

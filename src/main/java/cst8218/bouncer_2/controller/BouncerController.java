@@ -23,30 +23,32 @@ import jakarta.persistence.PersistenceUnit;
 import jakarta.transaction.UserTransaction;
 import java.util.Locale;
 
-@Named("bouncerController")
-@SessionScoped
+@Named("bouncerController") // Defines this bean as a JSF managed bean
+@SessionScoped // Maintains state during a user session
 public class BouncerController implements Serializable {
 
-    
     @Resource
-    private UserTransaction utx = null;
-    @PersistenceUnit(unitName = "my_persistence_unit")
-    private EntityManagerFactory emf = null;
-
-    private Bouncer current;
-    private DataModel items = null;
-    private BouncerJpaController jpaController = null;
-    private PaginationHelper pagination;
-    private int selectedItemIndex;
-    private Locale locale;
+    private UserTransaction utx = null; // Handles transactions
     
-    public BouncerController() {
-    }
+    @PersistenceUnit(unitName = "my_persistence_unit")
+    private EntityManagerFactory emf = null; // Manages entity persistence
 
+    private Bouncer current; // Stores the currently selected Bouncer entity
+    private DataModel items = null; // Holds the list of Bouncer entities
+    private BouncerJpaController jpaController = null; // Controller for database operations
+    private PaginationHelper pagination; // Handles pagination of results
+    private int selectedItemIndex; // Tracks the currently selected item
+    private Locale locale; // Stores the current locale for internationalization
+    
+    // Default constructor
+    public BouncerController() {}
+
+    // Initializes the locale based on user request settings
     @PostConstruct
     public void init(){
         locale = FacesContext.getCurrentInstance().getExternalContext().getRequestLocale();
     }
+    
     public Locale getLocale(){
         return locale;
     }
@@ -59,6 +61,7 @@ public class BouncerController implements Serializable {
         locale = new Locale(language);
         FacesContext.getCurrentInstance().getViewRoot().setLocale(locale);
     }
+    
     public Bouncer getSelected() {
         if (current == null) {
             current = new Bouncer();
@@ -66,7 +69,6 @@ public class BouncerController implements Serializable {
         }
         return current;
     }
-
     
     private BouncerJpaController getJpaController() {
         if (jpaController == null) {
@@ -75,10 +77,10 @@ public class BouncerController implements Serializable {
         return jpaController;
     }
 
+    // Provides pagination support
     public PaginationHelper getPagination() {
         if (pagination == null) {
             pagination = new PaginationHelper(10) {
-
                 @Override
                 public int getItemsCount() {
                     return getJpaController().getBouncerCount();
@@ -93,11 +95,12 @@ public class BouncerController implements Serializable {
         return pagination;
     }
 
+    // Navigation methods
     public String prepareList() {
         recreateModel();
         return "List";
     }
-
+    
     public String prepareView() {
         current = (Bouncer) getItems().getRowData();
         selectedItemIndex = pagination.getPageFirstItem() + getItems().getRowIndex();
@@ -147,40 +150,12 @@ public class BouncerController implements Serializable {
         return "List";
     }
 
-    public String destroyAndView() {
-        performDestroy();
-        recreateModel();
-        updateCurrentItem();
-        if (selectedItemIndex >= 0) {
-            return "View";
-        } else {
-            // all items were removed - go back to list
-            recreateModel();
-            return "List";
-        }
-    }
-
     private void performDestroy() {
         try {
             getJpaController().destroy(current.getId());
             JsfUtil.addSuccessMessage(ResourceBundle.getBundle("/Bundle").getString("BouncerDeleted"));
         } catch (Exception e) {
             JsfUtil.addErrorMessage(e, ResourceBundle.getBundle("/Bundle").getString("PersistenceErrorOccured"));
-        }
-    }
-
-    private void updateCurrentItem() {
-        int count = getJpaController().getBouncerCount();
-        if (selectedItemIndex >= count) {
-            // selected index cannot be bigger than number of items:
-            selectedItemIndex = count - 1;
-            // go to previous page if last page disappeared:
-            if (pagination.getPageFirstItem() >= count) {
-                pagination.previousPage();
-            }
-        }
-        if (selectedItemIndex >= 0) {
-            current = getJpaController().findBouncerEntities(1, selectedItemIndex).get(0);
         }
     }
 
@@ -199,26 +174,6 @@ public class BouncerController implements Serializable {
         pagination = null;
     }
 
-    public String next() {
-        getPagination().nextPage();
-        recreateModel();
-        return "List";
-    }
-
-    public String previous() {
-        getPagination().previousPage();
-        recreateModel();
-        return "List";
-    }
-
-    public SelectItem[] getItemsAvailableSelectMany() {
-        return JsfUtil.getSelectItems(getJpaController().findBouncerEntities(), false);
-    }
-
-    public SelectItem[] getItemsAvailableSelectOne() {
-        return JsfUtil.getSelectItems(getJpaController().findBouncerEntities(), true);
-    }
-
     @FacesConverter(forClass = Bouncer.class)
     public static class BouncerControllerConverter implements Converter {
 
@@ -229,19 +184,7 @@ public class BouncerController implements Serializable {
             }
             BouncerController controller = (BouncerController) facesContext.getApplication().getELResolver().
                     getValue(facesContext.getELContext(), null, "bouncerController");
-            return controller.getJpaController().findBouncer(getKey(value));
-        }
-
-        java.lang.Long getKey(String value) {
-            java.lang.Long key;
-            key = Long.valueOf(value);
-            return key;
-        }
-
-        String getStringKey(java.lang.Long value) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(value);
-            return sb.toString();
+            return controller.getJpaController().findBouncer(Long.valueOf(value));
         }
 
         @Override
@@ -250,13 +193,10 @@ public class BouncerController implements Serializable {
                 return null;
             }
             if (object instanceof Bouncer) {
-                Bouncer o = (Bouncer) object;
-                return getStringKey(o.getId());
+                return String.valueOf(((Bouncer) object).getId());
             } else {
-                throw new IllegalArgumentException("object " + object + " is of type " + object.getClass().getName() + "; expected type: " + Bouncer.class.getName());
+                throw new IllegalArgumentException("Invalid object type: " + object.getClass().getName());
             }
         }
-
     }
-
 }
