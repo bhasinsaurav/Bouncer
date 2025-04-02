@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="6.0" xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
+    <context-param>
+        <param-name>jakarta.faces.PROJECT_STAGE</param-name>
+        <param-value>Development</param-value>
+    </context-param>
+    <servlet>
+        <servlet-name>Faces Servlet</servlet-name>
+        <servlet-class>jakarta.faces.webapp.FacesServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Faces Servlet</servlet-name>
+        <url-pattern>/faces/*</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+    <!--Welcome File-->
+    <welcome-file-list>
+        <welcome-file>faces/UserDashboard.xhtml</welcome-file>
+    </welcome-file-list>
+    
+    <!--UserDashboard file security constraint-->
+    <security-constraint>
+        <display-name>DashBoard Page Access</display-name>
+        <web-resource-collection>
+            <web-resource-name>DashBoard Page</web-resource-name>
+            <description>Available to all</description>
+            <url-pattern>/faces/UserDashboard.xhtml</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Role Required</description>
+            <role-name>Admin</role-name>
+            <role-name>JsfUser</role-name>
+            <role-name>RestUser</role-name>
+        </auth-constraint>
+    </security-constraint>
+    
+    <!--AppUser Jsf file security constraint-->
+  
+    <security-constraint>
+        <display-name>AppUser Jsf Access</display-name>
+        <web-resource-collection>
+            <web-resource-name>AppUser Jsf</web-resource-name>
+            <description>Available to Admin</description>
+            <url-pattern>/faces/appUser/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Role Required</description>
+            <role-name>Admin</role-name>
+        </auth-constraint>
+    </security-constraint>
+ 
+    <!--Bouncer Jsf file security constraint-->
+
+    <security-constraint>
+        <display-name>Bouncer Jsf Access</display-name>
+        <web-resource-collection>
+            <web-resource-name>Bouncer JSF Pages</web-resource-name>
+            <description>Available to Admin and JsfUser</description>
+            <url-pattern>/faces/bouncer/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Role Required</description>
+            <role-name>Admin</role-name>
+            <role-name>JsfUser</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!--React file security-->
+    <security-constraint>
+        <display-name>React Page Access</display-name>
+        <web-resource-collection>
+            <web-resource-name>React Page</web-resource-name>
+            <description>Available to Admin and RestUser</description>
+            <url-pattern>/index.html</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Role Required</description>
+            <role-name>Admin</role-name>
+            <role-name>RestUser</role-name>
+        </auth-constraint>
+    </security-constraint>
+    
+  <!-- Security Roles -->
+    <security-role>
+        <role-name>Admin</role-name>
+    </security-role>
+    <security-role>
+        <role-name>JsfUser</role-name>
+    </security-role>
+    <security-role>
+        <role-name>RestUser</role-name>
+    </security-role>
+
+    
+</web-app>

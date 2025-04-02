@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncer Animation System</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { display: flex; gap: 20px; }
+        .table-container { flex: 1; }
+        .canvas-container { flex: 1; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input { width: 60px; }
+        canvas { border: 1px solid #000; background-color: #f0f0f0; }
+        button { cursor: pointer; margin: 2px; }
+        .selected { background-color: #e6f7ff; }
+        .error { color: red; margin: 5px 0; }
+        .form-row { margin-bottom: 10px; }
+        label { display: inline-block; width: 100px; }
+        .action-buttons { display: flex; gap: 5px; }
+        .static-bouncer { opacity: 0.7; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const BouncerApp = () => {
+            // Constants from the Bouncer class
+            const INITIAL_SIZE = 10;
+            const SIZE_LIMIT = 200;
+            const CHANGE_RATE = 2;
+            const TRAVEL_SPEED = 10;
+            const MAX_DIR_CHANGES = 10;
+            const DECREASE_RATE = 1;
+            const X_LIMIT = 400;
+            const Y_LIMIT = 200;
+            const MAX_TRAVEL_LIMIT = 100;
+
+            // State management
+            const [bouncers, setBouncers] = useState([]);
+            const [newBouncer, setNewBouncer] = useState({
+                x: 100,
+                y: 100,
+                size: INITIAL_SIZE,
+                maxTravel: 50,
+                currentTravel: 0,
+                dirChangeCount: 0,
+                mvtDirection: 1
+            });
+            const [selectedBouncer, setSelectedBouncer] = useState(null);
+            const [editingBouncer, setEditingBouncer] = useState(null);
+            const [error, setError] = useState(null);
+            
+            // Canvas and animation references
+            const canvasRef = useRef(null);
+            const animationRef = useRef(null);
+            const bouncerStatesRef = useRef({});
+
+            // API request helper with explicit content types
+            const apiRequest = async (url, method = 'GET', data = null) => {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                };
+
+                const config = {
+                    method,
+                    headers,
+                    credentials: 'same-origin'
+                };
+
+                if (data) {
+                    config.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(url, config);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Request failed');
+                }
+
+                return response.json();
+            };
+
+            // Fetch bouncers from API
+            const fetchBouncers = async () => {
+                try {
+                    const data = await apiRequest(
+                        "http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer"
+                    );
+                    setBouncers(data);
+                    
+                    // Initialize animation states for new bouncers
+                    data.forEach(bouncer => {
+                        if (!bouncerStatesRef.current[bouncer.id]) {
+                            bouncerStatesRef.current[bouncer.id] = {
+                                posX: bouncer.x,
+                                posY: bouncer.y,
+                                travel: bouncer.currentTravel || 0,
+                                direction: bouncer.mvtDirection || 1,
+                                isActive: bouncer.maxTravel > 0
+                            };
+                        } else {
+                            // Update active status based on current maxTravel
+                            bouncerStatesRef.current[bouncer.id].isActive = bouncer.maxTravel > 0;
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error fetching bouncers:", error);
+                    setError("Failed to load bouncers");
+                }
+            };
+
+            // Initial load and periodic refresh
+            useEffect(() => {
+                fetchBouncers();
+                const interval = setInterval(fetchBouncers, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            // Handle bouncer click to select it
+            const handleBouncerClick = (bouncer, e) => {
+                if (e) e.stopPropagation();
+                setSelectedBouncer(bouncer);
+            };
+
+            // Add new bouncer
+            const addBouncer = async (e) => {
+                e.preventDefault();
+                setError(null);
+                
+                try {
+                    // Validate
+                    if (newBouncer.x < 0 || newBouncer.x > X_LIMIT) {
+                        throw new Error(`X must be between 0-${X_LIMIT}`);
+                    }
+                    if (newBouncer.y < 0 || newBouncer.y > Y_LIMIT) {
+                        throw new Error(`Y must be between 0-${Y_LIMIT}`);
+                    }
+                    if (newBouncer.size < 1 || newBouncer.size > SIZE_LIMIT) {
+                        throw new Error(`Size must be between 1-${SIZE_LIMIT}`);
+                    }
+                    if (newBouncer.maxTravel < 0 || newBouncer.maxTravel > MAX_TRAVEL_LIMIT) {
+                        throw new Error(`Max Travel must be between 0-${MAX_TRAVEL_LIMIT}`);
+                    }
+
+                    await apiRequest(
+                        "http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer",
+                        'POST',
+                        newBouncer
+                    );
+                    
+                    fetchBouncers();
+                    setNewBouncer({
+                        x: 100,
+                        y: 100,
+                        size: INITIAL_SIZE,
+                        maxTravel: 50,
+                        currentTravel: 0,
+                        dirChangeCount: 0,
+                        mvtDirection: 1
+                    });
+                } catch (error) {
+                    console.error("Error adding bouncer:", error);
+                    setError(error.message);
+                }
+            };
+
+            // Edit bouncer
+            const editBouncer = (bouncer) => {
+                setEditingBouncer({ ...bouncer });
+                setSelectedBouncer(bouncer);
+            };
+
+            // Save edited bouncer
+            const saveEditedBouncer = async () => {
+                try {
+                    await apiRequest(
+                        `http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer/${editingBouncer.id}`,
+                        'PUT',
+                        editingBouncer
+                    );
+                    fetchBouncers();
+                    setEditingBouncer(null);
+                } catch (error) {
+                    console.error("Error updating bouncer:", error);
+                    setError(error.message);
+                }
+            };
+
+            // Delete bouncer
+            const deleteBouncer = async (id) => {
+                try {
+                    await apiRequest(
+                        `http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer/${id}`,
+                        'DELETE'
+                    );
+                    fetchBouncers();
+                    if (selectedBouncer?.id === id) {
+                        setSelectedBouncer(null);
+                    }
+                    if (editingBouncer?.id === id) {
+                        setEditingBouncer(null);
+                    }
+                } catch (error) {
+                    console.error("Error deleting bouncer:", error);
+                    setError(error.message);
+                }
+            };
+
+            // Animation loop
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+
+                const animate = () => {
+                    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                    bouncers.forEach(bouncer => {
+                        const state = bouncerStatesRef.current[bouncer.id];
+                        if (!state) return;
+
+                        // Only update position if bouncer is active (maxTravel > 0)
+                        if (state.isActive) {
+                            state.posX += CHANGE_RATE * state.direction;
+                            state.travel += CHANGE_RATE;
+
+                            // Check if reached max travel or canvas boundary
+                            if (state.travel >= bouncer.maxTravel || 
+                                state.posX <= bouncer.size || 
+                                state.posX >= canvasWidth - bouncer.size) {
+                                
+                                // Reverse direction
+                                state.direction = -state.direction;
+                                state.travel = 0;
+                                
+                                // Decrease maxTravel after certain direction changes
+                                if (bouncer.dirChangeCount >= MAX_DIR_CHANGES) {
+                                    apiRequest(
+                                        `http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer/${bouncer.id}`,
+                                        'PUT',
+                                        {
+                                            ...bouncer,
+                                            maxTravel: Math.max(0, bouncer.maxTravel - DECREASE_RATE),
+                                            dirChangeCount: 0
+                                        }
+                                    ).then(() => fetchBouncers());
+                                } else {
+                                    apiRequest(
+                                        `http://localhost:8080/Bouncer_2/resources/cst8218.bouncer_2.entity.Bouncer/${bouncer.id}`,
+                                        'PUT',
+                                        {
+                                            ...bouncer,
+                                            dirChangeCount: (bouncer.dirChangeCount || 0) + 1,
+                                            mvtDirection: state.direction,
+                                            currentTravel: state.travel
+                                        }
+                                    ).then(() => fetchBouncers());
+                                }
+                            }
+                        }
+
+                        // Draw the bouncer
+                        ctx.beginPath();
+                        ctx.arc(state.posX, state.posY, bouncer.size, 0, Math.PI * 2);
+                        ctx.fillStyle = selectedBouncer?.id === bouncer.id ? '#FF0000' : 
+                                        (state.isActive ? '#0000FF' : '#888888');
+                        ctx.fill();
+                        
+                        // Draw direction indicator if active
+                        if (state.isActive) {
+                            ctx.beginPath();
+                            ctx.moveTo(state.posX, state.posY);
+                            ctx.lineTo(
+                                state.posX + (bouncer.size * state.direction), 
+                                state.posY
+                            );
+                            ctx.strokeStyle = '#FFFFFF';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        }
+                    });
+
+                    animationRef.current = requestAnimationFrame(animate);
+                };
+
+                animationRef.current = requestAnimationFrame(animate);
+
+                return () => {
+                    if (animationRef.current) {
+                        cancelAnimationFrame(animationRef.current);
+                    }
+                };
+            }, [bouncers, selectedBouncer]);
+
+            return (
+                <div>
+                    <h1>Bouncer Animation System</h1>
+                    {error && <div className="error">{error}</div>}
+                    
+                    <div className="container">
+                        <div className="table-container">
+                            <h2>Bouncer Management</h2>
+                            <form onSubmit={addBouncer}>
+                                <div className="form-row">
+                                    <label>X Position:</label>
+                                    <input 
+                                        type="number" 
+                                        min="0" max={X_LIMIT}
+                                        value={newBouncer.x}
+                                        onChange={(e) => setNewBouncer({...newBouncer, x: Number(e.target.value)})}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-row">
+                                    <label>Y Position:</label>
+                                    <input 
+                                        type="number" 
+                                        min="0" max={Y_LIMIT}
+                                        value={newBouncer.y}
+                                        onChange={(e) => setNewBouncer({...newBouncer, y: Number(e.target.value)})}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-row">
+                                    <label>Size:</label>
+                                    <input 
+                                        type="number" 
+                                        min="1" max={SIZE_LIMIT}
+                                        value={newBouncer.size}
+                                        onChange={(e) => setNewBouncer({...newBouncer, size: Number(e.target.value)})}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-row">
+                                    <label>Max Travel:</label>
+                                    <input 
+                                        type="number" 
+                                        min="0" max={MAX_TRAVEL_LIMIT}
+                                        value={newBouncer.maxTravel}
+                                        onChange={(e) => setNewBouncer({...newBouncer, maxTravel: Number(e.target.value)})}
+                                        required
+                                    />
+                                </div>
+                                <button type="submit">Add Bouncer</button>
+                            </form>
+
+                            <h3>Bouncer List</h3>
+                            <table border="1">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Position</th>
+                                        <th>Size</th>
+                                        <th>Max Travel</th>
+                                        <th>Direction</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bouncers.map((bouncer) => (
+                                        <tr 
+                                            key={bouncer.id} 
+                                            className={selectedBouncer?.id === bouncer.id ? 'selected' : ''}
+                                            onClick={(e) => handleBouncerClick(bouncer, e)}
+                                        >
+                                            <td>{bouncer.id}</td>
+                                            <td>({bouncer.x}, {bouncer.y})</td>
+                                            <td>{bouncer.size}</td>
+                                            <td>{bouncer.maxTravel}</td>
+                                            <td>{bouncer.mvtDirection > 0 ? "Right" : "Left"}</td>
+                                            <td>{bouncer.maxTravel > 0 ? "Active" : "Stopped"}</td>
+                                            <td className="action-buttons">
+                                                <button onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    editBouncer(bouncer);
+                                                }}>
+                                                    Edit
+                                                </button>
+                                                <button onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteBouncer(bouncer.id);
+                                                }}>
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="canvas-container">
+                            <h2>Bouncer Animation</h2>
+                            <p>Bouncers stop moving when their max travel reaches zero.</p>
+                            <canvas 
+                                ref={canvasRef} 
+                                width={X_LIMIT} 
+                                height={Y_LIMIT}
+                            ></canvas>
+                            
+                            {selectedBouncer && (
+                                <div>
+                                    <h3>Selected Bouncer</h3>
+                                    {editingBouncer?.id === selectedBouncer.id ? (
+                                        <div>
+                                            <div className="form-row">
+                                                <label>X Position:</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="0" max={X_LIMIT}
+                                                    value={editingBouncer.x}
+                                                    onChange={(e) => setEditingBouncer({...editingBouncer, x: Number(e.target.value)})}
+                                                />
+                                            </div>
+                                            <div className="form-row">
+                                                <label>Y Position:</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="0" max={Y_LIMIT}
+                                                    value={editingBouncer.y}
+                                                    onChange={(e) => setEditingBouncer({...editingBouncer, y: Number(e.target.value)})}
+                                                />
+                                            </div>
+                                            <div className="form-row">
+                                                <label>Size:</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="1" max={SIZE_LIMIT}
+                                                    value={editingBouncer.size}
+                                                    onChange={(e) => setEditingBouncer({...editingBouncer, size: Number(e.target.value)})}
+                                                />
+                                            </div>
+                                            <div className="form-row">
+                                                <label>Max Travel:</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="0" max={MAX_TRAVEL_LIMIT}
+                                                    value={editingBouncer.maxTravel}
+                                                    onChange={(e) => setEditingBouncer({...editingBouncer, maxTravel: Number(e.target.value)})}
+                                                />
+                                            </div>
+                                            <button onClick={saveEditedBouncer}>Save</button>
+                                            <button onClick={() => setEditingBouncer(null)}>Cancel</button>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p>ID: {selectedBouncer.id}</p>
+                                            <p>Position: ({selectedBouncer.x}, {selectedBouncer.y})</p>
+                                            <p>Size: {selectedBouncer.size}</p>
+                                            <p>Max Travel: {selectedBouncer.maxTravel}</p>
+                                            <p>Current Travel: {selectedBouncer.currentTravel || 0}</p>
+                                            <p>Direction: {selectedBouncer.mvtDirection > 0 ? "Right" : "Left"}</p>
+                                            <p>Status: {selectedBouncer.maxTravel > 0 ? "Active" : "Stopped"}</p>
+                                            <button onClick={() => editBouncer(selectedBouncer)}>Edit</button>
+                                            <button onClick={() => deleteBouncer(selectedBouncer.id)}>Delete</button>
+                                            <button onClick={() => setSelectedBouncer(null)}>Deselect</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const rootElement = document.getElementById("root");
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<BouncerApp />);
+    </script>
+</body>
+</html>
